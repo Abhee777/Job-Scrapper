@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indian Govt Job Portal</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <h1>GovJobsIndia - Central & State Govt Job Search</h1>
+        <p>Find the latest real-time government job openings from official (.gov.in) websites.</p>
+    </header>
+
+    <main>
+        <section class="search-section">
+            <form id="searchForm">
+                <input type="text" id="query" name="query" placeholder="e.g. Software Engineer, Clerk, Teacher..." required>
+                <button type="submit">Search Jobs</button>
+            </form>
+        </section>
+
+        <section id="results" class="results-section">
+            <!-- Results will be injected here -->
+            <div id="loading" style="display: none;">Searching...</div>
+        </section>
+    </main>
+
+    <script>
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const query = document.getElementById('query').value;
+            const resultsContainer = document.getElementById('results');
+            const loading = document.getElementById('loading');
+
+            // Clear previous results except loading
+            Array.from(resultsContainer.children).forEach(child => {
+                if (child.id !== 'loading') child.remove();
+            });
+
+            loading.style.display = 'block';
+
+            try {
+                const response = await fetch('/search?q=' + encodeURIComponent(query));
+                const data = await response.json();
+                loading.style.display = 'none';
+
+                if (data.error) {
+                    const err = document.createElement('p');
+                    err.textContent = "Error: " + data.error;
+                    resultsContainer.appendChild(err);
+                    return;
+                }
+
+                if (data.results.length === 0) {
+                    const noRes = document.createElement('p');
+                    noRes.textContent = "No jobs found for this query.";
+                    resultsContainer.appendChild(noRes);
+                    return;
+                }
+
+                data.results.forEach(job => {
+                    const jobCard = document.createElement('div');
+                    jobCard.className = 'job-card';
+
+                    const title = document.createElement('h3');
+                    title.textContent = job.title;
+
+                    const desc = document.createElement('p');
+                    desc.className = 'job-desc';
+                    desc.textContent = job.snippet;
+
+                    const eligibility = document.createElement('div');
+                    eligibility.className = 'job-eligibility';
+                    eligibility.innerHTML = `<strong>Likely Eligibility/Requirements:</strong> ${job.eligibility}`;
+
+                    const link = document.createElement('a');
+                    link.href = job.link;
+                    link.target = '_blank';
+                    link.textContent = 'View Official Job Posting';
+                    link.className = 'apply-btn';
+
+                    jobCard.appendChild(title);
+                    jobCard.appendChild(desc);
+                    jobCard.appendChild(eligibility);
+                    jobCard.appendChild(link);
+
+                    resultsContainer.appendChild(jobCard);
+                });
+            } catch (error) {
+                loading.style.display = 'none';
+                const err = document.createElement('p');
+                err.textContent = "Error fetching results.";
+                resultsContainer.appendChild(err);
+            }
+        });
+    </script>
+</body>
+</html>
